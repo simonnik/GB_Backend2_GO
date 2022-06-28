@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -37,16 +38,11 @@ func main() {
 		wg.Done()
 	}()
 
-	for {
-		select {
-		case err := <-srv.Err:
-			cancel()
-			wg.Wait()
-
-			log.Fatal(err)
-		case <-ctx.Done():
-			cancel()
-			wg.Wait()
-		}
+	select {
+	case err := <-srv.Err:
+		log.Println(fmt.Errorf("server error: %w", err))
+	case <-ctx.Done():
 	}
+	cancel()
+	wg.Wait()
 }
