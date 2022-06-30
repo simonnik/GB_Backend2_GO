@@ -16,7 +16,7 @@ ENV GOSUMDB=off
 ENV GO111MODULE=on
 ENV WORKDIR=${GOPATH}/src/k8s-go-app
 
-COPY . ${WORKDIR}
+COPY ../k8s-go-app ${WORKDIR}
 WORKDIR ${WORKDIR}
 
 RUN set -xe ;\
