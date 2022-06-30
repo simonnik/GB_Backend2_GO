@@ -1,0 +1,12 @@
+version: "3.3"
+services:
+  postgres:
+    image: postgres:13.4
+    container_name: catalog-company
+    environment:
+      POSTGRES_USER: "catalog"
+      POSTGRES_PASSWORD: "catalog"
+    volumes:
+      - ./db:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
