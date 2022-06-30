@@ -13,10 +13,12 @@ import (
 	"github.com/simonnik/GB_Backend2_GO/internal/logic/storage"
 )
 
+// PGRepo works with PG
 type PGRepo struct {
 	db *pgxpool.Pool
 }
 
+// Checking if the interface matches
 var _ storage.Repo = &PGRepo{}
 
 // NewDB connects to DB and produces PGRepo
@@ -62,7 +64,7 @@ func (pg *PGRepo) RemoveFromGroup(ctx context.Context, uid, gid uuid.UUID) error
 	return err
 }
 
-// SearchUser ...
+// SearchUser search user by name and by member in groups if set
 func (pg *PGRepo) SearchUser(ctx context.Context, name string, gids []uuid.UUID) ([]entity.User, error) {
 
 	name += "%"
@@ -127,7 +129,7 @@ SELECT m3.user_uuid FROM membership m3 WHERE m3.group_uuid=$4);
 
 }
 
-// SearchGroup ...
+// SearchGroup search group by name and by members if set
 func (pg *PGRepo) SearchGroup(ctx context.Context, name string, uids []uuid.UUID) ([]entity.Group, error) {
 
 	name += "%"

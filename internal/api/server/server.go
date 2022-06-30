@@ -9,15 +9,17 @@ import (
 	"github.com/simonnik/GB_Backend2_GO/internal/logic/storage"
 )
 
+// Checking if the interface matches
 var _ starter.APIServer = &Server{}
 
 type Server struct {
 	srv http.Server
 	db  *storage.DB
+	Err chan error
 }
 
 func NewServer(addr string, h http.Handler) *Server {
-	s := &Server{}
+	s := &Server{Err: make(chan error)}
 
 	s.srv = http.Server{
 		Addr:              addr,
@@ -31,7 +33,12 @@ func NewServer(addr string, h http.Handler) *Server {
 
 func (s *Server) Start(db *storage.DB) {
 	s.db = db
-	go s.srv.ListenAndServe()
+	go func() {
+		err := s.srv.ListenAndServe()
+		if err != nil {
+			s.Err <- err
+		}
+	}()
 }
 
 func (s *Server) Stop() {

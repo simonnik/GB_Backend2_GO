@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
@@ -19,22 +20,29 @@ func main() {
 
 	// "postgresql://user:password@host:port/dbname"
 	connString := `postgresql://appuser:appuser@127.0.0.1:5432/app_db`
-	DB, err := postgres.NewDB(ctx, connString)
+	db, err := postgres.NewDB(ctx, connString)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
-	repo := storage.NewDB(DB)
+	repo := storage.NewDB(db)
 	a := starter.NewApp(repo)
 	h := handler.NewRouter(repo)
 	srv := server.NewServer(":8000", h)
 
 	wg := &sync.WaitGroup{}
-	wg.Add(1)
+	go func() {
+		wg.Add(1)
+		a.Serve(ctx, srv)
+		wg.Done()
+	}()
 
-	go a.Serve(ctx, wg, srv)
-
-	<-ctx.Done()
+	select {
+	case err := <-srv.Err:
+		log.Println(fmt.Errorf("server error: %w", err))
+	case <-ctx.Done():
+	}
 	cancel()
 	wg.Wait()
 }
