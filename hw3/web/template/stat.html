@@ -1,0 +1,24 @@
+{{template "head"}}
+<div class="container">
+    <table class="table">
+        <thead>
+        <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Link</th>
+            <th scope="col">IP</th>
+            <th scope="col">Created at</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range .}}
+            <tr>
+                <th scope="row">{{.ID}}</th>
+                <td class="col-6 text-break">{{.Link}}</td>
+                <td>{{.IP}}</td>
+                <td>{{.FormattedDate}}</td>
+            </tr>
+        {{end}}
+        </tbody>
+    </table>
+</div>
+{{template "footer"}}

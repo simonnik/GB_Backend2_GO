@@ -1,0 +1,144 @@
+openapi: "3.0.3"
+info:
+  title: Shortener
+  description: Service for creating short links
+  version: "1.0"
+tags:
+  - name: api
+    description: Endpoints using the REST API.
+  - name: html
+    description: Endpoints for rendering html.
+servers:
+  - url: "{protocol}://{hostname}"
+    variables:
+      hostname:
+        description: Hotname
+        default: shrt.io
+      protocol:
+        description: Protocol
+        default: https
+paths:
+  /api/create:
+    post:
+      summary: Create short link
+      description: Allows you to create a record about the link in the database.
+      operationId: CreateLink
+      tags:
+        - api
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              required:
+                - link
+              properties:
+                link:
+                  type: "string"
+                  description: "URL we are trying to shorten"
+                  example: "https://google.com"
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link:
+                    type: string
+                    example: "https://shortener.io/eBeSeeSJ"
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+        404:
+          description: Not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+        401:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+      security:
+        - apiKey: [ ]
+  /{token}:
+    get:
+      summary: Retrieve saved link
+      operationId: RetrieveLink
+      tags:
+        - html
+      parameters:
+        - name: "token"
+          in: "path"
+          description: "Token of link to return"
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        301:
+          description: Moved Permanently
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+        404:
+          description: Not found
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+  /html/form:
+    get:
+      summary: Form for generate short links
+      operationId: Form
+      tags:
+        - html
+      responses:
+        200:
+          description: Ok
+          content:
+            text/html:
+              schema:
+                type: string
+  /html/stat/{token}:
+    get:
+      summary: Statistics view table
+      operationId: Table
+      tags:
+        - html
+      responses:
+        200:
+          description: Ok
+          content:
+            text/html:
+              schema:
+                type: string
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "https:/test.com - invalid link"
+  securitySchemes:
+    apiKey:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Authorization jwt-token

@@ -1,0 +1,81 @@
+{{template "head"}}
+<div class="container">
+    <div class="col-sm-6 col-sm-offset-3">
+        <h1>Generating short links</h1>
+
+        <form action="/api/create" method="POST">
+            <div class="mb-3">
+                <label for="Link">Link</label>
+                <input
+                        type="text"
+                        class="form-control"
+                        id="link"
+                        name="link"
+                        placeholder="Long Link"
+                />
+            </div>
+
+            <div class="mb-3">
+                <button type="submit" class="btn btn-success">
+                    <span class="spinner-border spinner-border-sm visually-hidden" role="status"
+                          aria-hidden="true"></span>
+                    GO!
+                </button>
+            </div>
+        </form>
+        <div class="mb-3">
+            <div class="list-group">
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        $("form").submit(function (event) {
+            var formData = {
+                link: $("#link").val(),
+            };
+            let loading = $('.visually-hidden')
+            let listG = $('.list-group')
+            let form = $('form')
+
+            listG.html('');
+
+            form.find('.invalid-feedback').remove()
+            loading.removeClass('visually-hidden');
+            $.ajax({
+                type: "POST",
+                url: "/api/create",
+                data: JSON.stringify(formData),
+                dataType: "json",
+                encode: true,
+                headers: {
+                    "X-API-KEY": "{{.jwtToken}}",
+                    "Content-type": "application/json"
+                }
+            }).done(function (data) {
+                loading.addClass('visually-hidden');
+                let a = $('<a\>')
+                a.attr('href', data.link)
+                a.attr('target', '_blank')
+                a.text(data.link)
+                a.addClass('list-group-item list-group-item-action')
+                listG.append(a)
+
+                a = $('<a\>')
+                a.attr('href', data.stat)
+                a.attr('target', '_blank')
+                a.text(data.stat)
+                a.addClass('list-group-item list-group-item-action')
+                listG.append(a)
+            }).fail(function (data) {
+                loading.addClass('visually-hidden');
+                form.append($('<div class="invalid-feedback" style="display: block;">' + data.responseJSON.message +
+                    '</div>'))
+            });
+
+            event.preventDefault();
+        });
+    });
+</script>
+{{template "footer"}}

@@ -1,0 +1,1 @@
+CREATE USER shortener WITH PASSWORD 'shortener';

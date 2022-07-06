@@ -1,0 +1,37 @@
+version: "3.9"
+services:
+#  shortener:
+#    build:
+#      context: ./
+#      dockerfile: build/package/Dockerfile
+#    container_name: shortener-api
+#    env_file:
+#      - .env
+#    ports:
+#      - "${DOCKER_WEB_PORT}:8083"
+#    depends_on:
+#      - postgres
+  postgres:
+    image: postgres:14.1
+    ports:
+      - "${DOCKER_PG_PORT}:5432"
+    container_name: shortener-postgres
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_PASSWORD: $APP_DB_PASSWORD
+      POSTGRES_USER: APP_DB_USER
+      POSTGRES_DB: $APP_DB_NAME
+      TZ: "Europe/Moscow"
+    volumes:
+      - ./db/:/docker-entrypoint-initdb.d
+
+  migrate:
+    image: migrate/migrate
+    restart: on-failure
+    container_name: shortener-migrate
+    env_file:
+      - .env
+    volumes:
+      - ./migrations:/app/migrations
+    depends_on:
+      - postgres
