@@ -1,0 +1,84 @@
+version: "3.7"
+services:
+  database:
+    image: mysql:5.7
+    container_name: backend2-mysql
+    volumes:
+      - ./infrastructure/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_DATABASE: test
+    ports:
+      - 8010:3306
+
+  acl:
+    build:
+      dockerfile: dockerfile_acl
+      context: .
+    command: "/go/bin/acl"
+    container_name: backend2-acl
+    ports:
+      - 8001:80
+      - 8091:9090
+
+  router:
+    build:
+      dockerfile: dockerfile_router
+      context: .
+    depends_on:
+      - "database"
+    container_name: badkend2-router
+    command: "/go/bin/router"
+    ports:
+      - 8002:80
+      - 8092:9090
+
+  grafana:
+    image: grafana/grafana:6.4.4
+    environment:
+      - "GF_SECURITY_ADMIN_USER=admin"
+      - "GF_SECURITY_ADMIN_PASSWORD=password"
+    container_name: backend2-grafana
+    ports:
+      - 3000:3000
+
+  node-exporter:
+    image: prom/node-exporter:v1.0.1
+    container_name: backend2-node-exporter
+    ports:
+      - 9100:9100
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: backend2-jaeger
+    volumes:
+      - ./jaeger-ui.json:/etc/jaeger/jaeger-ui.json
+    command: --query.ui-config /etc/jaeger/jaeger-ui.json
+    environment:
+      - METRICS_STORAGE_TYPE=prometheus
+      - PROMETHEUS_SERVER_URL=http://prometheus:9090
+    ports:
+      - "14250:14250"
+      - "14268:14268"
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "16685:16685"
+
+  otel_collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: backend2-otel_collector
+    ports:
+      - "14278:14278"
+    volumes:
+      - ./otel-collector-config.yml:/etc/otelcol/otel-collector-config.yml
+    command: --config /etc/otelcol/otel-collector-config.yml
+    depends_on:
+      - jaeger
+
+  prometheus:
+    image: prom/prometheus:v2.33.3
+    container_name: backend2-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090

@@ -1,0 +1,22 @@
+FROM golang:1.15.1 as builder
+
+ENV GOSUMDB=off
+ENV GO111MODULE=on
+ENV WORKDIR=${GOPATH}/src/router
+
+COPY . ${WORKDIR}
+WORKDIR ${WORKDIR}
+
+RUN set -xe ;\
+    go build -o /go/bin/router ./app/cmd/router/router.go ;\
+    ls -lhtr /go/bin/
+
+FROM golang:1.15.1
+
+EXPOSE 80
+
+WORKDIR /go/bin
+
+COPY --from=builder /go/bin/router .
+
+ENTRYPOINT ["/go/bin/router"]
