@@ -1,0 +1,286 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-secret
+  labels:
+    app: postgres
+data:
+  POSTGRES_HOST_AUTH_METHOD: trust
+  POSTGRES_PASSWORD: shortener
+  POSTGRES_USER: shortener
+  POSTGRES_DB: shortener
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shortener-secret
+  labels:
+    app: shortener
+data:
+  APP_HOST: "http://localhost:8083"
+  APP_DB_HOST: "postgres.g3-snew"
+  APP_DB_NAME: "shortener"
+  APP_DB_PASSWORD: "shortener"
+  APP_DB_PORT: "5432"
+  APP_DB_USER: "shortener"
+  APP_DB_SSL_MODE: "disable"
+  APP_DB_MIGRATIONS_DIR: "/app/migrations"
+  APP_LOG_LEVEL: "debug"
+  APP_PORT: "8083"
+  APP_JWT_SECRET: "5f23a46e-1913-42c0-b59e-0b89ad7bed42"
+  APP_HASH_SALT: "shazam"
+  APP_HASH_MIN_LENGTH: "7"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:14.0
+          imagePullPolicy: "Always"
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - configMapRef:
+                name: postgres-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  type: NodePort
+  ports:
+    - port: 5432
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shortener
+  labels:
+    app: shortener
+spec:
+  replicas: 6
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 6
+      maxSurge: 2
+  template:
+    metadata:
+      labels:
+        app: shortener
+    spec:
+      volumes:
+        - name: src
+          emptyDir: { }
+      containers:
+        - name: shortener
+          image: docker.io/sim4nix/shortener:0.1.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8083
+          envFrom:
+            - configMapRef:
+                name: shortener-secret
+          livenessProbe:
+            httpGet:
+              path: /check/health
+              port: 8083
+          readinessProbe:
+            httpGet:
+              path: /check/readiness
+              port: 8083
+          resources:
+            limits:
+              cpu: 2m
+              memory: 10Mi
+            requests:
+              cpu: 2m
+              memory: 10Mi
+  selector:
+    matchLabels:
+      app: shortener
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shortener
+  labels:
+    app: shortener
+spec:
+  ports:
+    - port: 8083
+      targetPort: 8083
+      protocol: TCP
+      name: http
+  selector:
+    app: shortener
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    ingress.kubernetes.io/rewrite-target: /
+  labels:
+    app: shortener
+  name: shortener
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /app
+            pathType: Prefix
+            backend:
+              service:
+                name: shortener
+                port:
+                  number: 8083
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  creationTimestamp: null
+  name: job-migration
+spec:
+  backoffLimit: 6
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        job-name: job-migration
+    spec:
+      containers:
+        - command:
+            - /bin/sh
+            - -c
+            - migrate -path /app/migrations -database postgresql://shortener:shortener@postgres.g3-snew:5432/shortener?sslmode=disable -verbose up
+          envFrom:
+            - configMapRef:
+                name: shortener-secret
+          image: sim4nix/shortener-migrate:0.1.1
+          imagePullPolicy: Always
+          name: migration-job
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {}
+            privileged: false
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          stdin: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          tty: true
+          workingDir: /app
+      dnsPolicy: ClusterFirst
+      restartPolicy: Never
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+  name: swagger
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: swagger
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: swagger
+    spec:
+      containers:
+        - env:
+            - name: SWAGGER_JSON
+              value: /api.yaml
+          image: sim4nix/shortener-swagger:0.1.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          name: swagger
+          resources: {}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {}
+            privileged: false
+            procMount: Default
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          stdin: true
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          tty: true
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+  labels:
+  name: swagger
+spec:
+  clusterIP: None
+  ports:
+    - name: swagger
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: swagger
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-swagger
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /swagger/(.*)
+            pathType: Prefix
+            backend:
+              service:
+                name: swagger
+                port:
+                  number: 8080

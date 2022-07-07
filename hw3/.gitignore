@@ -1,0 +1,4 @@
+.env
+k8s-g3-semyon-conf.yaml
+k8s-g3-snew-conf.yml
+README.k8s.md
