@@ -7,7 +7,7 @@ up:
 wrk_script:
 	wrk \
 		-t10 \
-		-c200 \
+		-c2000 \
 		-d30s \
 		-H 'Host: sweet-home.com' \
 		--timeout 2s \
@@ -15,10 +15,21 @@ wrk_script:
 		http://localhost:8002/entities
 
 
+wrk_entity:
+	wrk \
+		-t10 \
+		-c200 \
+		-d30s \
+		-H 'Host: sweet-home.com' \
+		--timeout 2s \
+		-s ./infrastructure/load_test/wrk.lua \
+		http://localhost:8002/entities
+
+
 wrk_get:
 	wrk \
 		-t50 \
-		-c100 \
+		-c1000 \
 		-d10s \
 		-H 'Host: sweet-home.com' \
 		--timeout 2s \

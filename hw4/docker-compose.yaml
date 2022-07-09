@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   database:
-    image: mysql:5.7
+    image: mysql:latest
     container_name: backend2-mysql
     volumes:
       - ./infrastructure/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
@@ -15,7 +15,7 @@ services:
     build:
       dockerfile: dockerfile_acl
       context: .
-    command: "/go/bin/acl"
+    command: "/app/acl"
     container_name: backend2-acl
     ports:
       - 8001:80
@@ -28,16 +28,18 @@ services:
     depends_on:
       - "database"
     container_name: badkend2-router
-    command: "/go/bin/router"
+    command: "/app/router"
     ports:
       - 8002:80
       - 8092:9090
 
   grafana:
-    image: grafana/grafana:6.4.4
+    image: grafana/grafana:latest
     environment:
       - "GF_SECURITY_ADMIN_USER=admin"
       - "GF_SECURITY_ADMIN_PASSWORD=password"
+    volumes:
+      - ./grafana-datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
     container_name: backend2-grafana
     ports:
       - 3000:3000
