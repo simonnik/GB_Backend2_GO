@@ -1,0 +1,27 @@
+### Create user
+POST http://localhost:8080/api/users/create
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "name": "Joe Biden",
+  "age": 78,
+  "spouse": 10
+}
+### Update user
+PUT http://localhost:8080/api/users/1
+Content-Type: application/json
+
+{
+  "name": "Joe Biden",
+  "age": 78,
+  "spouse": 11
+}
+
+### Get user
+GET http://localhost:8080/api/users/1
+Content-Type: application/json
+
+### Delete user
+DELETE http://localhost:8080/api/users/1
+Content-Type: application/json
