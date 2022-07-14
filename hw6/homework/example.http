@@ -1,0 +1,15 @@
+### Signup
+POST http://localhost:8080/signup
+Content-Type: application/json
+
+{
+  "login": "samurai",
+  "pass": "syogun"
+}
+### Signup
+POST http://localhost:8080/signup-complete
+Content-Type: application/json
+
+{
+  "code": 148084
+}
