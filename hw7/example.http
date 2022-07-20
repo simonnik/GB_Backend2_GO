@@ -1,0 +1,5 @@
+### Rate
+POST http://localhost:80/rate?rate=3
+
+### Total
+GET http://localhost:80/total
